@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Isometric Engine Starter</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #gameWrapper {
+            position: relative;
+            background: #1c1c1c;
+            border: 4px solid #2d2d2d;
+            border-radius: 8px;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            width: 900px;
+            max-width: 100vw;
+            transition: all 0.3s ease;
+        }
+
+        #gameWrapper.fullscreen {
+            width: 100vw;
+            height: 100vh;
+            max-width: 100vw;
+            border: none;
+            border-radius: 0;
+        }
+
+        .header-bar {
+            background: #222;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #2d2d2d;
+            font-size: 13px;
+            font-weight: bold;
+            color: #ff9f43;
+        }
+
+        #gameCanvas {
+            background: #181c1e;
+            cursor: pointer;
+            width: 100%;
+            height: 480px;
+        }
+
+        .hud-container {
+            background: #1a1a1a;
+            border-top: 3px solid #2d2d2d;
+            height: 140px;
+            display: grid;
+            grid-template-columns: 32% 36% 32%;
+            box-sizing: border-box;
+            padding: 5px;
+            gap: 5px;
+        }
+
+        .chat-section {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            padding: 4px;
+            overflow: hidden;
+        }
+
+        .chat-log {
+            flex-grow: 1;
+            overflow-y: auto;
+            font-size: 11px;
+            color: #a4b0be;
+            padding-right: 4px;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 4px;
+        }
+
+        .chat-input-wrapper input {
+            flex-grow: 1;
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 4px 6px;
+            font-size: 12px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .chat-input-wrapper button {
+            background: #2ed573;
+            border: none;
+            color: #fff;
+            padding: 0 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        .map-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border-left: 2px solid #2d2d2d;
+            border-right: 2px solid #2d2d2d;
+        }
+
+        .circle-map {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #2f3542 40%, #1e222b 100%);
+            border: 4px solid #eccc68;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 4px 8px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+            position: relative;
+        }
+
+        .timer-arc {
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border-radius: 50%;
+            border: 4px solid #ff7f50;
+            pointer-events: none;
+            transition: transform 0.1s linear;
+        }
+
+        .turn-controls {
+            margin-top: 6px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .hud-btn {
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+            border: 1px solid #444;
+            color: #fff;
+        }
+        .btn-pass { background: #ff4757; }
+        .btn-flag { background: #747d8c; }
+        .btn-stats { background: #54a0ff; }
+        .btn-full { background: #ffa502; color:#111; }
+
+        .hotbar-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hotbar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+            padding: 4px;
+            box-sizing: border-box;
+        }
+
+        .hotbar-slot {
+            background: #222;
+            border: 2px solid #3a3a3a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .hotbar-slot:hover { background: #2f3542; border-color: #57606f; }
+        .hotbar-slot.active { background: #1e375a; border-color: #54a0ff; }
+        
+        .slot-cost {
+            position: absolute;
+            top: 1px; right: 2px;
+            font-size: 8px;
+            color: #ff7f50;
+            font-weight: bold;
+        }
+
+        .slot-stacks {
+            position: absolute;
+            bottom: 1px; left: 2px;
+            font-size: 9px;
+            color: #2ed573;
+            font-weight: bold;
+            background: rgba(0,0,0,0.6);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .stats-overlay {
+            position: absolute;
+            top: 40px; left: 15px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 2px solid #54a0ff;
+            border-radius: 6px;
+            width: 200px;
+            padding: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            display: none;
+            z-index: 100;
+        }
+
+        .stats-overlay h3 { margin: 0 0 8px 0; font-size: 14px; color: #54a0ff; border-bottom: 1px solid #333; padding-bottom: 4px;}
+        .stat-line { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="gameWrapper">
+        <div class="header-bar">
+            <span id="hudState">ADVENTURE MODE</span>
+            <span id="hudMapCoords">MAP:</span>
+            <span id="hudTileCoords">TILE: [R: -, C: -]</span>
+        </div>
+
+        <canvas id="gameCanvas" width="900" height="480"></canvas>
+
+        <div id="statsModal" class="stats-overlay">
+            <h3>CHARACTER SHEET</h3>
+            <div class="stat-line"><span>CLASS:</span><span style="color:#2ed573">Cra (M)</span></div>
+            <div class="stat-line"><span>LEVEL:</span><span>100</span></div>
+            <div class="stat-line"><span>BASE AP:</span><span id="statAP">18</span></div>
+            <div class="stat-line"><span>BASE MP:</span><span id="statMP">6</span></div>
+            <div class="stat-line"><span>ACTIVE STACKS:</span><span id="statStacks" style="color:#2ed573">0</span></div>
+            <div class="stat-line"><span>BONUS FLAT DMG:</span><span id="statDmg" style="color:#ff7f50">+0</span></div>
+        </div>
+
+        <div class="hud-container">
+            <div class="chat-section">
+                <div id="chatLog" class="chat-log"></div>
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chatInput" placeholder="Press Enter to speak..." autocomplete="off">
+                    <button id="chatBtn">Send</button>
+                </div>
+            </div>
+
+            <div class="map-section">
+                <div class="circle-map">
+                    <div id="timerRing" class="timer-arc"></div>
+                    <div id="hudTurnOwner" style="font-size:10px; color:#aaa;">FREE ROAM</div>
+                    <div id="hudTimerClock" style="font-size:16px; margin-top:2px;">30s</div>
+                </div>
+                <div class="turn-controls">
+                    <button class="hud-btn btn-stats" id="btnStats">STATS</button>
+                    <button class="hud-btn btn-pass" id="btnPass" style="display:none;">PASS</button>
+                    <button class="hud-btn btn-flag" id="btnFlag" style="display:none;">🏳️</button>
+                    <button class="hud-btn btn-full" id="btnFull">MAX</button>
+                </div>
+            </div>
+
+            <div class="hotbar-section">
+                <div class="hotbar-grid" id="hotbarGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const GRID_SIZE = 18;
+        const TILE_WIDTH = 52;
+        const TILE_HEIGHT = 26;
+
+        let MAP_OFFSET_X = canvas.width / 2;
+        let MAP_OFFSET_Y = canvas.height / 5;
+
+        let gameMode = "ADVENTURE";
+        let currentMap = { x: 0, y: 0 };
+        let activeTurn = "PLAYER";
+        let turnTimer = 30 * 60;
+
+        let player = { gridX: 3, gridY: 9, screenX: 0, screenY: 0, targetX: 3, targetY: 9, ap: 18, mp: 6 };
+        let playerBuffs = [];
+        let selectedSpell = null;
+        let speechBubble = null;
+
+        let puchEntity = { gridX: 4, gridY: 8, hp: 2500, maxHp: 2500, alive: true };
+        let environmentObjects = [
+            { type: 'pond', cx: 9, cy: 9, r: 2.5 },
+            { type: 'zaap', x: 8, y: 0 },
+            { type: 'tree', x: 4, y: 3 },
+            { type: 'tree', x: 12, y: 14 },
+            { type: 'tree', x: 5, y: 12 }
+        ];
+        let merchantNPC = { gridX: 9, gridY: 7, active: false };
+
+        let hoveredTile = { r: -1, c: -1 };
+        let activeProjectiles = [];
+        let activeVisualEffects = [];
+        let animationTick = 0;
+
+        function logMsg(text, color = "#a4b0be") {
+            const chatLog = document.getElementById('chatLog');
+            chatLog.innerHTML += `<div style="color:${color}">${text}</div>`;
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+        logMsg("Welcome to World Map. Proximity search: Puch Ingball nearby.", "#ff9f43");
+
+        function gridToScreen(gx, gy) {
+            return {
+                x: MAP_OFFSET_X + (gx - gy) * (TILE_WIDTH / 2),
+                y: MAP_OFFSET_Y + (gx + gy) * (TILE_HEIGHT / 2)
+            };
+        }
+
+        function screenToGrid(sx, sy) {
+            let rect = canvas.getBoundingClientRect();
+            let dx = (sx - rect.left) - MAP_OFFSET_X;
+            let dy = (sy - rect.top) - MAP_OFFSET_Y;
+            let gx = Math.floor((dx / (TILE_WIDTH / 2) + dy / (TILE_HEIGHT / 2)) / 2);
+            let gy = Math.floor((dy / (TILE_HEIGHT / 2) - dx / (TILE_WIDTH / 2)) / 2);
+            return { r: gx, c: gy };
+        }
+
+        function checkCollision(gx, gy) {
+            if (gx < 0 || gx >= GRID_SIZE || gy < 0 || gy >= GRID_SIZE) return false;
+            
+            for (let obj of environmentObjects) {
+                if (currentMap.y === 0) {
+                    if (obj.type === 'pond') {
+                        let d = Math.sqrt(Math.pow(gx - obj.cx, 2) + Math.pow(gy - obj.cy, 2));
+                        if (d <= obj.r) return false;
+                    }
+                    if (obj.type === 'zaap' && obj.x === gx && obj.y === gy) return false;
+                    if (obj.type === 'tree' && obj.x === gx && obj.y === gy) return false;
+                }
+            }
+
+            if (gameMode === "BATTLE" && puchEntity.alive && puchEntity.gridX === gx && puchEntity.gridY === gy) return false;
+            if (currentMap.y === 1 && merchantNPC.gridX === gx && merchantNPC.gridY === gy) return false;
+
+            return true;
+        }
+
+        function targetTimelineProxy(targetType) {
+            if (gameMode !== "BATTLE" || !selectedSpell) return;
+            if (targetType === 'PLAYER') {
+                if (selectedSpell === 'Buff') executeCast(player.gridX, player.gridY);
+                else logMsg("Cannot execute offensive magic lines on self face card!", "#ff4757");
+            } else if (targetType === 'ENEMY') {
+                if (puchEntity.alive) executeCast(puchEntity.gridX, puchEntity.gridY);
+            }
+        }
+
+        function rebuildHotbarUI() {
+            const grid = document.getElementById('hotbarGrid');
+            grid.innerHTML = "";
+            
+            let items = gameMode === "BATTLE" 
+                ? [
+                    { name: 'Magic Arrow', icon: '🏹', cost: '4AP' },
+                    { name: 'Compulsion Buff', icon: '✨', cost: '3AP' },
+                    { name: 'CC Sword Strike', icon: '⚔️', cost: '3AP' }
+                  ]
+                : [
+                    { name: 'Field Rations', icon: '🍞', cost: '' },
+                    { name: 'Recall Potion', icon: '🧪', cost: '' }
+                  ];
+
+            for (let i = 0; i < 14; i++) {
+                let slot = document.createElement('div');
+                slot.className = "hotbar-slot";
+                let action = items[i];
+
+                if (action) {
+                    slot.innerHTML = `<span>${action.icon}</span><span class="slot-cost">${action.cost}</span>`;
+                    if (action.name === 'Compulsion Buff' && playerBuffs.length > 0) {
+                        slot.innerHTML += `<span class="slot-stacks">${playerBuffs.length}</span>`;
+                    }
+                    if (selectedSpell === action.name || (selectedSpell === 'Buff' && action.name === 'Compulsion Buff') || (selectedSpell === 'Sword' && action.name === 'CC Sword Strike')) {
+                        slot.className += " active";
+                    }
+                    slot.onclick = () => {
+                        if (gameMode !== "BATTLE") {
+                            logMsg(`Used item payload shortcut element: ${action.name}`, "#54a0ff");
+                            return;
+                        }
+                        if (action.name === 'Magic Arrow') selectedSpell = "Magic Arrow";
+                        else if (action.name === 'Compulsion Buff') selectedSpell = "Buff";
+                        else if (action.name === 'CC Sword Strike') selectedSpell = "Sword";
+                        rebuildHotbarUI();
+                    };
+                }
+                grid.appendChild(slot);
+            }
+        }
+
+        function initiateFightMode() {
+            gameMode = "BATTLE";
+            activeTurn = "PLAYER";
+            turnTimer = 30 * 60;
+            player.ap = 18;
+            player.mp = 6;
+            selectedSpell = null;
+            
+            document.getElementById('hudState').innerText = "⚔️ BATTLE MODE";
+            document.getElementById('btnPass').style.display = "block";
+            document.getElementById('btnFlag').style.display = "block";
+            rebuildHotbarUI();
+            logMsg("Match Engaged! AP and MP pools loaded. Multi-element casting active.", "#ff4757");
+        }
+
+        function escapeToAdventure() {
+            gameMode = "ADVENTURE";
+            playerBuffs = [];
+            selectedSpell = null;
+            document.getElementById('hudState').innerText = "🗺️ ADVENTURE MODE";
+            document.getElementById('btnPass').style.display = "none";
+            document.getElementById('btnFlag').style.display = "none";
+            document.getElementById('hudTurnOwner').innerText = "FREE ROAM";
+            document.getElementById('hudTimerClock').innerText = "30s";
+            
+            player.gridX = Math.max(0, player.gridX - 1);
+            player.gridY = Math.max(0, player.gridY - 1);
+            player.targetX = player.gridX; player.targetY = player.gridY;
+            
+            rebuildHotbarUI();
+            logMsg("Fled combat arena safely back to exploration rules.", "#747d8c");
+        }
+
+        function passTurn() {
+            if (gameMode !== "BATTLE" || activeTurn !== "PLAYER") return;
+            activeTurn = "ENEMY";
+            turnTimer = 60;
+            logMsg("Passed control phase over to Puch Ingball ticker tracker...", "#ffa502");
+        }
+
+        function executeCast(tx, ty) {
+            if (!selectedSpell) return;
+
+            let flatBonus = playerBuffs.length * 6;
+
+            if (selectedSpell === "Buff") {
+                if (tx !== player.gridX || ty !== player.gridY) {
+                    logMsg("Self-buff spells require 0 range target profile nodes!", "#ff4757");
+                    return;
+                }
+                if (player.ap < 3) { logMsg("Insufficient action points!", "#ff4757"); return; }
+                player.ap -= 3;
+                playerBuffs.push(4);
+                logMsg(`Cast Compulsion! Gained stacked +6 damage line modifications (+${playerBuffs.length * 6} flat).`, "#2ed573");
+                selectedSpell = null;
+                rebuildHotbarUI();
+                return;
+            }
+
+            if (selectedSpell === "Magic Arrow") {
+                if (player.ap < 4) { logMsg("Insufficient action points!", "#ff4757"); return; }
+                if (tx !== player.gridX && ty !== player.gridY) {
+                    logMsg("Magic Arrow requires clean axial line-of-sight rows!", "#ff4757");
+                    return;
+                }
+                player.ap -= 4;
+                let startPos = gridToScreen(player.gridX, player.gridY);
+                let endPos = gridToScreen(tx, ty);
+                
+                activeProjectiles.push({
+                    sx: startPos.x, sy: startPos.y - 15,
+                    cx: startPos.x, cy: startPos.y - 15,
+                    tx: endPos.x, ty: endPos.y - 15,
+                    progress: 0, speed: 0.02,
+                    type: 'arrow', gx: tx, gy: ty, bonus: flatBonus
+                });
+                selectedSpell = null;
+                rebuildHotbarUI();
+            }
+
+            if (selectedSpell === "Sword") {
+                if (player.ap < 3) { logMsg("Insufficient action points!", "#ff4757"); return; }
+                let dist = Math.abs(player.gridX - tx) + Math.abs(player.gridY - ty);
+                if (dist !== 1) { logMsg("Melee weapons require strict 1-range proximity tiles!", "#ff4757"); return; }
+                
+                player.ap -= 3;
+                resolveDamageCalculation(tx, ty, true, flatBonus);
+                selectedSpell = null;
+                rebuildHotbarUI();
+            }
+        }
+
+        function resolveDamageCalculation(tx, ty, isSword, bonus) {
+            if (puchEntity.alive && puchEntity.gridX === tx && puchEntity.gridY === ty) {
+                let lines = [
+                    { name: 'Earth', dmg: Math.floor(Math.random() * 20) + 40 + bonus, col: '#d35400' },
+                    { name: 'Air', dmg: Math.floor(Math.random() * 20) + 40 + bonus, col: '#2ecc71' },
+                    { name: 'Chance', dmg: Math.floor(Math.random() * 20) + 40 + bonus, col: '#2980b9' },
+                    { name: 'Intelligence', dmg: Math.floor(Math.random() * 20) + 40 + bonus, col: '#e74c3c' }
+                ];
+                if (isSword) {
+                    lines.push({ name: 'Neutral', dmg: Math.floor(Math.random() * 20) + 40 + bonus, col: '#bdc3c7' });
+                }
+
+                let total = 0;
+                lines.forEach((l, i) => {
+                    total += l.dmg;
+                    activeVisualEffects.push({
+                        type: 'damageText', text: `-${l.dmg}`, color: l.col,
+                        sx: canvas.width / 4, sy: 120 + (i * 20), timer: 60
+                    });
+                    logMsg(`  Inflicted ${l.name} structural hit calculation line: -${l.dmg}`, l.col);
+                });
+
+                puchEntity.hp = Math.max(0, puchEntity.hp - total);
+                
+                let scr = gridToScreen(tx, ty);
+                activeVisualEffects.push({ type: 'burst', x: scr.x, y: scr.y, timer: 60, max: 60 });
+
+                if (puchEntity.hp <= 0) {
+                    puchEntity.alive = false;
+                    logMsg("Training target Puch Ingball defeated! Terminating context match.", "#2ed573");
+                    setTimeout(() => { escapeToAdventure(); }, 1200);
+                }
+            }
+        }
+
+        function systemUpdateTick() {
+            animationTick++;
+
+            let currentPixel = gridToScreen(player.gridX, player.gridY);
+            let targetPixel = gridToScreen(player.targetX, player.targetY);
+            
+            player.screenX += (targetPixel.x - player.screenX) * 0.15;
+            player.screenY += (targetPixel.y - player.screenY) * 0.15;
+
+            if (Math.abs(player.screenX - targetPixel.x) < 1 && Math.abs(player.screenY - targetPixel.y) < 1) {
+                let moved = (player.gridX !== player.targetX || player.gridY !== player.targetY);
+                player.gridX = player.targetX;
+                player.gridY = player.targetY;
+                
+                if (moved && gameMode === "ADVENTURE") {
+                    if (currentMap.y === 0 && player.gridX === 0 && player.gridY === 9) {
+                        currentMap.y = 1;
+                        player.gridX = 16; player.gridY = 9;
+                        player.targetX = 16; player.targetY = 9;
+                        puchEntity.alive = false;
+                        logMsg("Crossed northern gateway node. Loading Merchant Quarter.", "#ff9f43");
+                    } else if (currentMap.y === 1 && player.gridX === 17 && player.gridY === 9) {
+                        currentMap.y = 0;
+                        player.gridX = 1; player.gridY = 9;
+                        player.targetX = 1; player.targetY = 9;
+                        puchEntity.alive = true; puchEntity.hp = 2500;
+                        logMsg("Returned southern gateway axis. Loading Dojo Proving grounds.", "#ff9f43");
+                    }
+                }
+            }
+
+            for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+                let p = activeProjectiles[i];
+                p.progress += p.speed;
+                p.cx = p.sx + (p.tx - p.sx) * p.progress;
+                p.cy = p.sy + (p.ty - p.sy) * p.progress;
+
+                if (p.progress >= 1) {
+                    resolveDamageCalculation(p.gx, p.gy, false, p.bonus);
+                    activeProjectiles.splice(i, 1);
+                }
+            }
+
+            for (let i = activeVisualEffects.length - 1; i >= 0; i--) {
+                let fx = activeVisualEffects[i];
+                fx.timer--;
+                if (fx.timer <= 0) activeVisualEffects.splice(i, 1);
+            }
+
+            if (gameMode === "BATTLE") {
+                turnTimer--;
+                if (activeTurn === "PLAYER") {
+                    document.getElementById('hudTurnOwner').innerText = "YOUR TURN";
+                    document.getElementById('hudTimerClock').innerText = `${Math.ceil(turnTimer / 60)}s`;
+                    if (turnTimer <= 0) passTurn();
+                } else {
+                    document.getElementById('hudTurnOwner').innerText = "PUCH TURN";
+                    document.getElementById('hudTimerClock').innerText = `1s`;
+                    if (turnTimer <= 0) {
+                        activeTurn = "PLAYER";
+                        turnTimer = 30 * 60;
+                        player.ap = 18;
+                        player.mp = 6;
+                        for (let b = playerBuffs.length - 1; b >= 0; b--) {
+                            playerBuffs[b]--;
+                            if (playerBuffs[b] <= 0) playerBuffs.splice(b, 1);
+                        }
+                        rebuildHotbarUI();
+                        logMsg("Your turn starting! Resource tokens refreshed.", "#2ed573");
+                    }
+                }
+            }
+
+            document.getElementById('hudMapCoords').innerText = `MAP: [${currentMap.x}, ${currentMap.y}]`;
+            document.getElementById('hudTileCoords').innerText = `TILE: [R: ${player.gridX}, C: ${player.gridY}]`;
+            document.getElementById('statAP').innerText = player.ap;
+            document.getElementById('statMP').innerText = player.mp;
+            document.getElementById('statStacks').innerText = playerBuffs.length;
+            document.getElementById('statDmg').innerText = `+${playerBuffs.length * 6}`;
+        }
+
+        function drawVisualLayerFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    let tileColor = ((r + c) % 2 === 0) ? '#242b2e' : '#2c3539';
+                    let strokeColor = '#3b444b';
+
+                    if (gameMode === "ADVENTURE") {
+                        if (currentMap.y === 0 && r === 0 && c === 9) tileColor = 'rgba(255, 159, 67, 0.45)';
+                        if (currentMap.y === 1 && r === 17 && c === 9) tileColor = 'rgba(255, 159, 67, 0.45)';
+                    }
+
+                    if (r === hoveredTile.r && c === hoveredTile.c && checkCollision(r, c)) {
+                        tileColor = '#4b6584';
+                    }
+
+                    let pt = gridToScreen(r, c);
+                    ctx.beginPath();
+                    ctx.moveTo(pt.x, pt.y);
+                    ctx.lineTo(pt.x + TILE_WIDTH / 2, pt.y + TILE_HEIGHT / 2);
+                    ctx.lineTo(pt.x, pt.y + TILE_HEIGHT);
+                    ctx.lineTo(pt.x - TILE_WIDTH / 2, pt.y + TILE_HEIGHT / 2);
+                    ctx.closePath();
+                    ctx.fillStyle = tileColor;
+                    ctx.fill();
+                    ctx.strokeStyle = strokeColor;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+
+            for (let obj of environmentObjects) {
+                if (currentMap.y === 0) {
+                    let sc = gridToScreen(obj.cx || obj.x, obj.cy || obj.y);
+                    if (obj.type === 'pond') {
+                        ctx.fillStyle = 'rgba(41, 128, 185, 0.8)';
+                        ctx.beginPath();
+                        ctx.ellipse(sc.x, sc.y + 13, 50, 25, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#54a0ff';
+                        ctx.stroke();
+                    }
+                    if (obj.type === 'zaap') {
+                        ctx.fillStyle = '#7f8c8d';
+                        ctx.fillRect(sc.x - 12, sc.y - 40, 24, 45);
+                        ctx.fillStyle = 'rgba(52, 152, 219, 0.75)';
+                        ctx.fillRect(sc.x - 6, sc.y - 35, 12, 40);
+                    }
+                    if (obj.type === 'tree') {
+                        ctx.fillStyle = '#5c4033';
+                        ctx.fillRect(sc.x - 3, sc.y - 5, 6, 12);
+                        ctx.fillStyle = '#27ae60';
+                        ctx.beginPath(); ctx.moveTo(sc.x, sc.y - 35); ctx.lineTo(sc.x + 12, sc.y - 5); ctx.lineTo(sc.x - 12, sc.y - 5); ctx.closePath(); ctx.fill();
+                    }
+                }
+            }
+
+            if (currentMap.y === 1) {
+                let mpos = gridToScreen(merchantNPC.gridX, merchantNPC.gridY);
+                ctx.fillStyle = '#e17055';
+                ctx.fillRect(mpos.x - 8, mpos.y - 25, 16, 25);
+                ctx.fillStyle = '#fff';
+                ctx.font = '9px monospace';
+                ctx.fillText("🛒 MERCHANT", mpos.x - 28, mpos.y - 32);
+            }
+
+            if (gameMode === "BATTLE" && puchEntity.alive) {
+                let ppos = gridToScreen(puchEntity.gridX, puchEntity.gridY);
+                ctx.fillStyle = '#d2b48c';
+                ctx.fillRect(ppos.x - 10, ppos.y - 30, 20, 30);
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(ppos.x - 2, ppos.y - 40, 4, 10);
+                
+                ctx.fillStyle = '#ff4d4d'; ctx.fillRect(ppos.x - 20, ppos.y - 48, 40, 4);
+                ctx.fillStyle = '#2ed573'; ctx.fillRect(ppos.x - 20, ppos.y - 48, (puchEntity.hp / puchEntity.maxHp) * 40, 4);
+            }
+
+            let idleBob = Math.sin(animationTick * 0.1) * 2;
+            ctx.save();
+            ctx.translate(player.screenX, player.screenY + idleBob);
+
+            ctx.fillStyle = '#27ae60'; ctx.fillRect(-8, -22, 16, 22);
+            ctx.fillStyle = '#ffeaa7'; ctx.beginPath(); ctx.arc(0, -28, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#ffeaa7'; ctx.fillRect(-3, -36, 12, 8);
+            ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.moveTo(4, -30); ctx.lineTo(-12, -26); ctx.lineTo(2, -34); ctx.fill();
+            ctx.strokeStyle = '#d35400'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(6, -20); ctx.lineTo(12, -10); ctx.stroke();
+
+            ctx.restore();
+
+            activeProjectiles.forEach(p => {
+                if (p.type === 'arrow') {
+                    ctx.fillStyle = '#54a0ff';
+                    ctx.beginPath(); ctx.arc(p.cx, p.cy, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(84, 160, 255, 0.4)'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(p.cx - 10, p.cy); ctx.lineTo(p.cx, p.cy); ctx.stroke();
+                }
+            });
+
+            activeVisualEffects.forEach(fx => {
+                if (fx.type === 'burst') {
+                    ctx.strokeStyle = `rgba(84, 160, 255, ${fx.timer / fx.max})`;
+                    ctx.lineWidth = 3; ctx.beginPath();
+                    ctx.arc(fx.x, fx.y + 10, (fx.max - fx.timer) * 0.8, 0, Math.PI * 2); ctx.stroke();
+                }
+            });
+
+            if (gameMode === "BATTLE") {
+                ctx.fillStyle = activeTurn === "PLAYER" ? '#2c3e50' : '#1e272e';
+                ctx.strokeStyle = activeTurn === "PLAYER" ? '#ffa502' : '#3d464d';
+                ctx.lineWidth = 2; ctx.fillRect(15, 60, 110, 45); ctx.strokeRect(15, 60, 110, 45);
+                ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.fillText("🏹 CRA (Player)", 22, 75);
+                ctx.fillStyle = '#ff7f50'; ctx.fillText(`AP:${player.ap} MP:${player.mp}`, 22, 92);
+
+                if (activeTurn === "PLAYER") {
+                    ctx.fillStyle = '#ffa502';
+                    ctx.fillRect(15, 102, (turnTimer / (30 * 60)) * 110, 3);
+                }
+
+                if (puchEntity.alive) {
+                    ctx.fillStyle = activeTurn === "ENEMY" ? '#2c3e50' : '#1e272e';
+                    ctx.strokeStyle = activeTurn === "ENEMY" ? '#ffa502' : '#3d464d';
+                    ctx.fillRect(15, 115, 110, 45); ctx.strokeRect(15, 115, 110, 45);
+                    ctx.fillStyle = '#fff'; ctx.fillText("🌾 PUCH DUMMY", 22, 130);
+                    ctx.fillStyle = '#ff4d4d'; ctx.fillText(`HP: ${puchEntity.hp}`, 22, 148);
+                }
+            }
+
+            if (speechBubble && speechBubble.timer > 0) {
+                speechBubble.timer--;
+                ctx.font = "11px sans-serif";
+                
+                let maxW = 140;
+                let pad = 8;
+                let words = speechBubble.text.split(' ');
+                let lines = [];
+                let currLine = words || "";
+
+                for (let i = 1; i < words.length; i++) {
+                    if (ctx.measureText(currLine + " " + words[i]).width < maxW) currLine += " " + words[i];
+                    else { lines.push(currLine); currLine = words[i]; }
+                }
+                lines.push(currLine);
+
+                let lineH = 14;
+                let bH = (lines.length * lineH) + (pad * 2);
+                let bW = maxW + (pad * 2);
+                let bx = player.screenX - bW / 2;
+                let by = player.screenY - 55 - bH;
+
+                ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+                ctx.strokeStyle = "#111"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.roundRect(bx, by, bW, bH, 5); ctx.fill(); ctx.stroke();
+
+                ctx.fillStyle = "#111"; ctx.textAlign = "left";
+                lines.forEach((l, idx) => {
+                    ctx.fillText(l, bx + pad, by + pad + 10 + (idx * lineH));
+                });
+
+                if (speechBubble.timer <= 0) speechBubble = null;
+            }
+
+            ctx.textAlign = "center";
+            activeVisualEffects.forEach(fx => {
+                if (fx.type === 'damageText') {
+                    ctx.fillStyle = fx.color; ctx.font = "bold 16px sans-serif";
+                    ctx.fillText(fx.text, fx.sx, fx.sy);
+                }
+            });
+            ctx.textAlign = "left";
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            let rect = canvas.getBoundingClientRect();
+            hoveredTile = screenToGrid(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('click', (e) => {
+            let rect = canvas.getBoundingClientRect();
+            let mx = e.clientX - rect.left;
+            let my = e.clientY - rect.top;
+
+            if (gameMode === "BATTLE") {
+                if (mx >= 15 && mx <= 125) {
+                    if (my >= 60 && my <= 105) { targetTimelineProxy('PLAYER'); return; }
+                    if (my >= 115 && my <= 160) { targetTimelineProxy('ENEMY'); return; }
+                }
+            }
+
+            let clicked = screenToGrid(e.clientX, e.clientY);
+            
+            if (selectedSpell) {
+                executeCast(clicked.r, clicked.c);
+                return;
+            }
+
+            if (!checkCollision(clicked.r, clicked.c)) {
+                if (gameMode === "ADVENTURE" && currentMap.y === 0 && puchEntity.alive && clicked.r === puchEntity.gridX && clicked.c === puchEntity.gridY) {
+                    initiateFightMode();
+                }
+                if (gameMode === "ADVENTURE" && currentMap.y === 1 && clicked.r === merchantNPC.gridX && clicked.c === merchantNPC.gridY) {
+                    logMsg("Merchant NPC: 'Greetings traveler. Shop systems coming soon!'", "#e17055");
+                }
+                return;
+            }
+
+            if (gameMode === "ADVENTURE") {
+                player.targetX = clicked.r; player.targetY = clicked.c;
+            } else if (gameMode === "BATTLE" && activeTurn === "PLAYER") {
+                let dist = Math.abs(player.gridX - clicked.r) + Math.abs(player.gridY - clicked.c);
+                if (dist <= player.mp) {
+                    player.mp -= dist;
+                    player.targetX = clicked.r; player.targetY = clicked.c;
+                    logMsg(`Moved grid rows. Used ${dist} MP. Remaining: ${player.mp}`, "#54a0ff");
+                } else {
+                    logMsg("Target path node out of reach of active MP range!", "#ff4757");
+                }
+            }
+        });
+
+        function submitChatMessage() {
+            const input = document.getElementById('chatInput');
+            let msg = input.value.trim();
+            if (msg === "") return;
+
+            speechBubble = { text: msg, timer: 240 };
+            logMsg(`Player: ${msg}`, "#ffffff");
+            input.value = "";
+        }
+
+        document.getElementById('chatBtn').onclick = submitChatMessage;
+        document.getElementById('chatInput').onkeydown = (e) => { if (e.key === 'Enter') submitChatMessage(); };
+
+        document.getElementById('btnPass').onclick = passTurn;
+        document.getElementById('btnFlag').onclick = escapeToAdventure;
+        
+        document.getElementById('btnStats').onclick = () => {
+            const modal = document.getElementById('statsModal');
+            modal.style.display = modal.style.display === "block" ? "none" : "block";
+        };
+
+        function autoConfigureCanvasSize() {
+            const wrap = document.getElementById('gameWrapper');
+            if (wrap.classList.contains('fullscreen')) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight - 140;
+            } else {
+                canvas.width = 900;
+                canvas.height = 480;
+            }
+            MAP_OFFSET_X = canvas.width / 2;
+            MAP_OFFSET_Y = canvas.height / 5;
+        }
+
+        document.getElementById('btnFull').onclick = () => {
+            const wrap = document.getElementById('gameWrapper');
+            wrap.classList.toggle('fullscreen');
+            autoConfigureCanvasSize();
+        };
+
+        window.addEventListener('resize', () => {
+            autoConfigureCanvasSize();
+        });
+
+        let pixelPos = gridToScreen(player.gridX, player.gridY);
+        player.screenX = pixelPos.x; player.screenY = pixelPos.y;
+
+        autoConfigureCanvasSize();
+        rebuildHotbarUI();
+
+        setInterval(() => {
+            systemUpdateTick();
+            drawVisualLayerFrame();
+        }, 1000 / 60);
+    </script>
+</body>
+</html>
